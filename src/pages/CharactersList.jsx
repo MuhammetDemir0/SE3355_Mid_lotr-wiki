@@ -23,6 +23,14 @@ export function CharactersList() {
     fetchCharacters();
   }, []);
 
+  const handleSearch = (value) => {
+    setSearchQuery(value);
+    // Keep search behavior intuitive: searching should not be silently blocked by an old race filter.
+    if (value.trim() && raceFilter !== 'all') {
+      setRaceFilter('all');
+    }
+  };
+
   const fetchCharacters = async () => {
     try {
       setLoading(true);
@@ -35,7 +43,6 @@ export function CharactersList() {
         const data = await lotrApi.getCharacters(50, offset);
         if (data.characters.length === 0) break;
         allChars = [...allChars, ...data.characters];
-        if (allChars.length >= 100) break; // Limit to 100 characters
         offset += 50;
       }
       
@@ -52,11 +59,12 @@ export function CharactersList() {
   // Search and filtering
   useEffect(() => {
     let filtered = allCharacters;
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
     // Search filter
-    if (searchQuery) {
+    if (normalizedQuery) {
       filtered = filtered.filter(char =>
-        char.name.toLowerCase().includes(searchQuery.toLowerCase())
+        (char.name || '').toLowerCase().includes(normalizedQuery)
       );
     }
 
@@ -90,7 +98,7 @@ export function CharactersList() {
         {/* Search Bar */}
         <div className="mb-8">
           <SearchBar 
-            onSearch={setSearchQuery}
+            onSearch={handleSearch}
             placeholder="Search character name... (Ex: Gandalf, Frodo)"
           />
         </div>
