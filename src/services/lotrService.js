@@ -95,12 +95,34 @@ function enrichCharacter(character) {
   if (!character) return character;
   const nameKey = (character.name || '').toLowerCase();
   const knownImage = CHARACTER_IMAGE_BY_NAME[nameKey];
+  const displayName = nameKey.startsWith('aragorn') ? 'Aragorn' : character.name;
 
   return {
     ...character,
+    name: displayName,
     race: normalizeRace(character.race, character.name),
     image: character.image || knownImage || '/character-fallback.svg'
   };
+}
+
+function getCharacterDedupKey(character) {
+  const nameKey = (character?.name || '').toLowerCase().trim();
+  if (nameKey.startsWith('aragorn')) return 'aragorn';
+  return nameKey;
+}
+
+function dedupeCharacters(characters) {
+  const uniqueCharacters = [];
+  const seen = new Set();
+
+  characters.forEach(character => {
+    const dedupeKey = getCharacterDedupKey(character);
+    if (seen.has(dedupeKey)) return;
+    seen.add(dedupeKey);
+    uniqueCharacters.push(character);
+  });
+
+  return uniqueCharacters;
 }
 
 function enrichBook(book) {
@@ -233,7 +255,7 @@ export const lotrApi = {
       if (!response.ok) throw new Error('Failed to fetch characters');
       const data = await response.json();
       return { 
-        characters: (data.docs || []).map(enrichCharacter),
+        characters: dedupeCharacters((data.docs || []).map(enrichCharacter)),
         total: data.total
       };
     } catch (error) {
@@ -242,8 +264,8 @@ export const lotrApi = {
       const start = offset;
       const end = start + limit;
       return {
-        characters: MOCK_CHARACTERS.slice(start, end).map(enrichCharacter),
-        total: MOCK_CHARACTERS.length
+        characters: dedupeCharacters(MOCK_CHARACTERS.slice(start, end).map(enrichCharacter)),
+        total: dedupeCharacters(MOCK_CHARACTERS.map(enrichCharacter)).length
       };
     }
   },
@@ -354,13 +376,15 @@ export const lotrApi = {
       const filtered = data.docs.filter(char =>
         char.name.toLowerCase().includes(keyword.toLowerCase())
       );
-      return filtered.map(enrichCharacter);
+      return dedupeCharacters(filtered.map(enrichCharacter));
     } catch (error) {
       console.error('Error searching characters, using mock data:', error);
       // Use mock data as fallback
       return MOCK_CHARACTERS.filter(char =>
         char.name.toLowerCase().includes(keyword.toLowerCase())
-      ).map(enrichCharacter);
+      ).map(enrichCharacter).filter((character, index, characters) =>
+        index === characters.findIndex(item => getCharacterDedupKey(item) === getCharacterDedupKey(character))
+      );
     }
   },
 
@@ -375,11 +399,11 @@ export const lotrApi = {
       );
       if (!response.ok) throw new Error('Failed to fetch book characters');
       const data = await response.json();
-      return (data.docs || []).map(enrichCharacter);
+      return dedupeCharacters((data.docs || []).map(enrichCharacter));
     } catch (error) {
       console.error('Error fetching book characters, using mock data:', error);
       // Return mock data as fallback
-      return MOCK_CHARACTERS.slice(0, 12).map(enrichCharacter);
+      return dedupeCharacters(MOCK_CHARACTERS.slice(0, 12).map(enrichCharacter));
     }
   },
 
@@ -413,11 +437,11 @@ export const lotrApi = {
       );
       if (!response.ok) throw new Error('Failed to fetch movie characters');
       const data = await response.json();
-      return (data.docs || []).map(enrichCharacter);
+      return dedupeCharacters((data.docs || []).map(enrichCharacter));
     } catch (error) {
       console.error('Error fetching movie characters, using mock data:', error);
       // Return mock data as fallback
-      return MOCK_CHARACTERS.map(enrichCharacter);
+      return dedupeCharacters(MOCK_CHARACTERS.map(enrichCharacter));
     }
   }
 };
