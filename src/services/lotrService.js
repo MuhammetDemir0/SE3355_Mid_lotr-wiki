@@ -52,6 +52,57 @@ const MOVIE_METADATA = {
   'the hobbit: the battle of the five armies': MOCK_MOVIES[5],
 };
 
+const CHARACTER_IMAGE_BY_NAME = {
+  gandalf: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/SDCC13_-_Ian_McKellen.jpg/500px-SDCC13_-_Ian_McKellen.jpg',
+  saruman: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Christopher_Lee_2009.jpg/500px-Christopher_Lee_2009.jpg',
+  aragorn: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Viggo_Mortensen_B_%282020%29.jpg/500px-Viggo_Mortensen_B_%282020%29.jpg',
+  legolas: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Orlando_Bloom_at_the_2024_Toronto_International_Film_Festival_%28cropped2%29.jpg/500px-Orlando_Bloom_at_the_2024_Toronto_International_Film_Festival_%28cropped2%29.jpg',
+  gimli: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/John_Rhys-Davies_NASA_2025.jpg/500px-John_Rhys-Davies_NASA_2025.jpg',
+  boromir: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Sean_Bean_Anemone-25_%28cropped%29.jpg/500px-Sean_Bean_Anemone-25_%28cropped%29.jpg',
+  'frodo baggins': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Elijah_Wood_at_the_2025_Sundance_Film_Festival_%28cropped%292.jpg/500px-Elijah_Wood_at_the_2025_Sundance_Film_Festival_%28cropped%292.jpg',
+  'bilbo baggins': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Martin_Freeman-5341.jpg/500px-Martin_Freeman-5341.jpg',
+  'samwise gamgee': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Sean_Astin_%2827506939735%29_%28cropped%29.jpg/500px-Sean_Astin_%2827506939735%29_%28cropped%29.jpg',
+  gollum: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Andy_Serkis_at_MEGACON_Orlando_2025.png/500px-Andy_Serkis_at_MEGACON_Orlando_2025.png',
+  galadriel: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Cate_Blanchett-63298_%28cropped_2%29.jpg/500px-Cate_Blanchett-63298_%28cropped_2%29.jpg',
+  elrond: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/MJK_08925_Hugo_Weaving_%28Berlinale_2018%29_bw43.jpg/500px-MJK_08925_Hugo_Weaving_%28Berlinale_2018%29_bw43.jpg',
+  sauron: '/sauron-option-1.jpg'
+};
+
+function normalizeRace(race, name) {
+  const raceValue = (race || '').toLowerCase().trim();
+  const nameValue = (name || '').toLowerCase().trim();
+
+  if (raceValue === 'maiar' || raceValue === 'maia' || raceValue === 'istar' || raceValue === 'wizard') {
+    return 'Istari';
+  }
+  if (raceValue === 'man' || raceValue === 'men') {
+    return 'Human';
+  }
+  if (raceValue === 'orcs') {
+    return 'Orc';
+  }
+
+  if (!raceValue) {
+    if (nameValue.includes('gandalf') || nameValue.includes('saruman') || nameValue.includes('radagast')) {
+      return 'Istari';
+    }
+  }
+
+  return race || 'Unknown';
+}
+
+function enrichCharacter(character) {
+  if (!character) return character;
+  const nameKey = (character.name || '').toLowerCase();
+  const knownImage = CHARACTER_IMAGE_BY_NAME[nameKey];
+
+  return {
+    ...character,
+    race: normalizeRace(character.race, character.name),
+    image: character.image || knownImage || '/character-fallback.svg'
+  };
+}
+
 function enrichBook(book) {
   if (!book) return book;
   const metadata = BOOK_METADATA[book.name?.toLowerCase()] || {};
@@ -182,7 +233,7 @@ export const lotrApi = {
       if (!response.ok) throw new Error('Failed to fetch characters');
       const data = await response.json();
       return { 
-        characters: data.docs || [],
+        characters: (data.docs || []).map(enrichCharacter),
         total: data.total
       };
     } catch (error) {
@@ -191,7 +242,7 @@ export const lotrApi = {
       const start = offset;
       const end = start + limit;
       return {
-        characters: MOCK_CHARACTERS.slice(start, end),
+        characters: MOCK_CHARACTERS.slice(start, end).map(enrichCharacter),
         total: MOCK_CHARACTERS.length
       };
     }
@@ -205,11 +256,11 @@ export const lotrApi = {
       });
       if (!response.ok) throw new Error('Failed to fetch character details');
       const data = await response.json();
-      return data.docs[0];
+      return enrichCharacter(data.docs[0]);
     } catch (error) {
       console.error('Error fetching character details, using mock data:', error);
       // Use mock data as fallback
-      return MOCK_CHARACTERS.find(c => c._id === id) || MOCK_CHARACTERS[0];
+      return enrichCharacter(MOCK_CHARACTERS.find(c => c._id === id) || MOCK_CHARACTERS[0]);
     }
   },
 
@@ -303,13 +354,13 @@ export const lotrApi = {
       const filtered = data.docs.filter(char =>
         char.name.toLowerCase().includes(keyword.toLowerCase())
       );
-      return filtered;
+      return filtered.map(enrichCharacter);
     } catch (error) {
       console.error('Error searching characters, using mock data:', error);
       // Use mock data as fallback
       return MOCK_CHARACTERS.filter(char =>
         char.name.toLowerCase().includes(keyword.toLowerCase())
-      );
+      ).map(enrichCharacter);
     }
   },
 
@@ -324,11 +375,11 @@ export const lotrApi = {
       );
       if (!response.ok) throw new Error('Failed to fetch book characters');
       const data = await response.json();
-      return data.docs || [];
+      return (data.docs || []).map(enrichCharacter);
     } catch (error) {
       console.error('Error fetching book characters, using mock data:', error);
       // Return mock data as fallback
-      return MOCK_CHARACTERS.slice(0, 12);
+      return MOCK_CHARACTERS.slice(0, 12).map(enrichCharacter);
     }
   },
 
@@ -362,11 +413,11 @@ export const lotrApi = {
       );
       if (!response.ok) throw new Error('Failed to fetch movie characters');
       const data = await response.json();
-      return data.docs || [];
+      return (data.docs || []).map(enrichCharacter);
     } catch (error) {
       console.error('Error fetching movie characters, using mock data:', error);
       // Return mock data as fallback
-      return MOCK_CHARACTERS;
+      return MOCK_CHARACTERS.map(enrichCharacter);
     }
   }
 };

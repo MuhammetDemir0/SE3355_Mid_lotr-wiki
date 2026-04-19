@@ -62,7 +62,9 @@ export function CharactersList() {
 
     // Race filter
     if (raceFilter !== 'all') {
-      filtered = filtered.filter(char => char.race === raceFilter);
+      filtered = filtered.filter(char =>
+        (char.race || '').toLowerCase() === raceFilter.toLowerCase()
+      );
     }
 
     setFilteredCharacters(filtered);
