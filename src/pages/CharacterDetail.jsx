@@ -54,6 +54,8 @@ export function CharacterDetail() {
     return colors[race] || '#64748b';
   };
 
+  const imageSrc = character.image || '/character-fallback.svg';
+
   return (
     <div className="bg-gradient-to-b from-slate-900 to-slate-800 min-h-screen py-12 px-4">
       <div className="max-w-4xl mx-auto">
@@ -63,19 +65,17 @@ export function CharacterDetail() {
         </Link>
 
         {/* Character Image Header */}
-        {character.image && (
-          <div className="mb-6 rounded-lg overflow-hidden border-2 border-amber-600 shadow-2xl bg-slate-900 p-2">
-            <img 
-              src={character.image} 
-              alt={character.name}
-              className="w-full h-72 md:h-96 object-contain rounded"
-              onError={(e) => {
-                if (e.currentTarget.src.includes('/character-fallback.svg')) return;
-                e.currentTarget.src = '/character-fallback.svg';
-              }}
-            />
-          </div>
-        )}
+        <div className="mb-6 rounded-lg overflow-hidden border-2 border-amber-600 shadow-2xl bg-slate-900 p-2">
+          <img 
+            src={imageSrc}
+            alt={character.name}
+            className="w-full h-72 md:h-96 object-contain rounded"
+            onError={(e) => {
+              if (e.currentTarget.src.includes('/character-fallback.svg')) return;
+              e.currentTarget.src = '/character-fallback.svg';
+            }}
+          />
+        </div>
 
         {/* Character Title */}
         <div className="bg-gradient-to-r from-amber-900 to-orange-900 rounded-lg p-8 mb-8 border-2 border-amber-700">

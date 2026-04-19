@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 
 export function CharacterCard({ character }) {
+  const imageSrc = character.image || '/character-fallback.svg';
+
   const getRaceColor = (race) => {
     const colors = {
       'Hobbit': 'from-emerald-700 to-emerald-900',
@@ -23,19 +25,17 @@ export function CharacterCard({ character }) {
     <Link to={`/character/${character._id}`}>
       <div className="h-full bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg overflow-hidden hover:shadow-2xl transition duration-300 transform hover:scale-105 border-2 border-slate-700 hover:border-amber-500 cursor-pointer flex flex-col md:flex-row">
         {/* Character Image - Left Side */}
-        {character.image && (
-          <div className="w-full md:w-48 h-56 md:h-auto overflow-hidden bg-slate-800 flex items-center justify-center p-2 flex-shrink-0">
-            <img 
-              src={character.image} 
-              alt={character.name}
-              className="w-full h-full object-contain rounded"
-              onError={(e) => {
-                if (e.currentTarget.src.includes('/character-fallback.svg')) return;
-                e.currentTarget.src = '/character-fallback.svg';
-              }}
-            />
-          </div>
-        )}
+        <div className="w-full md:w-48 h-56 md:h-auto overflow-hidden bg-slate-800 flex items-center justify-center p-2 flex-shrink-0">
+          <img 
+            src={imageSrc}
+            alt={character.name}
+            className="w-full h-full object-contain rounded"
+            onError={(e) => {
+              if (e.currentTarget.src.includes('/character-fallback.svg')) return;
+              e.currentTarget.src = '/character-fallback.svg';
+            }}
+          />
+        </div>
 
         {/* Content - Right Side */}
         <div className="flex-1 flex flex-col">
